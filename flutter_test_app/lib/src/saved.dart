@@ -1,13 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:english_words/english_words.dart';
 import 'package:toast/toast.dart';
+import 'bloc/Bloc.dart';
+
 class SavedList extends StatefulWidget {
-  final Set<WordPair> saved;
-
-  SavedList(
-      //constructor
-      {@required this.saved});
-
   @override
   _SavedListState createState() => _SavedListState();
 }
@@ -22,14 +18,26 @@ class _SavedListState extends State<SavedList> {
   }
 
   Widget _buildList() {
-    return ListView.builder(
-        itemCount: widget.saved.length * 2,
-        itemBuilder: (context, index) {
-          if (index.isOdd) {
-            return Divider();
+    return StreamBuilder<Set<WordPair>>(
+        stream: bloc.savedStream,
+        builder: (context, snapshot) {
+          var saved = Set<WordPair>();
+
+          if (snapshot.hasData) {
+            saved.addAll(snapshot.data);
+          } else {
+            bloc.addCureentSaved;
           }
-          var realIndex = index ~/ 2;
-          return _buildRow(widget.saved.toList()[realIndex]);
+
+          return ListView.builder(
+              itemCount: snapshot.data.length * 2,
+              itemBuilder: (context, index) {
+                if (index.isOdd) {
+                  return Divider();
+                }
+                var realIndex = index ~/ 2;
+                return _buildRow(saved.toList()[realIndex]);
+              });
         });
   }
 
@@ -37,10 +45,7 @@ class _SavedListState extends State<SavedList> {
     return ListTile(
       title: Text(pair.asPascalCase),
       onTap: () {
-        setState(() {
-          Toast.show(pair.asPascalCase + "is unselected", context, gravity: Toast.BOTTOM);
-          widget.saved.remove(pair);
-        });
+        bloc.addToOrRemoveFromSavedList(pair);
       },
     );
   }
